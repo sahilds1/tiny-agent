@@ -1,1 +1,1 @@
-# agent-pedal
+# tiny-agent
