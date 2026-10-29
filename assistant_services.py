@@ -39,8 +39,8 @@ def run_assistant(
             **MODEL_DEFAULTS,
         )
 
-        # search_documents needs the request user for document access control
-        return run_agentic_loop(initial_response, client, MODEL_DEFAULTS, TOOLS, user)
+        # Balancer's context is the request user: search_documents needs it for document access control
+        return run_agentic_loop(initial_response, client, MODEL_DEFAULTS, TOOLS, context=user)
 
     initial_response = client.responses.create(
         input=[
@@ -49,5 +49,5 @@ def run_assistant(
         **MODEL_DEFAULTS,
     )
 
-    # search_documents needs the request user for document access control
-    return run_agentic_loop(initial_response, client, MODEL_DEFAULTS, TOOLS, user)
+    # Balancer's context is the request user: search_documents needs it for document access control
+    return run_agentic_loop(initial_response, client, MODEL_DEFAULTS, TOOLS, context=user)

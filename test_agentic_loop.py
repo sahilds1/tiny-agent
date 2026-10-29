@@ -33,7 +33,7 @@ def response(response_id, *items, text=None):
 
 def test_loop_feeds_each_tool_output_back_until_the_model_answers():
     tool = Tool("search_documents", "", {}, run=MagicMock(side_effect=["out1", "out2"]))
-    user = object()
+    context = object()
     client = MagicMock()
     # A list side_effect runs out: if the loop failed to stop, the extra call would raise.
     client.responses.create.side_effect = [
@@ -42,7 +42,7 @@ def test_loop_feeds_each_tool_output_back_until_the_model_answers():
     ]
 
     result = run_agentic_loop(
-        response("r1", call("search_documents", "c1", query="q1")), client, {"instructions": "cite sources"}, [tool], user
+        response("r1", call("search_documents", "c1", query="q1")), client, {"instructions": "cite sources"}, [tool], context
     )
 
     # Each follow-up carries the previous iteration's output, paired with its call_id,
@@ -56,8 +56,8 @@ def test_loop_feeds_each_tool_output_back_until_the_model_answers():
         ("r1", "cite sources", [{"type": "function_call_output", "call_id": "c1", "output": "out1"}]),
         ("r2", "cite sources", [{"type": "function_call_output", "call_id": "c2", "output": "out2"}]),
     ]
-    # Every dispatch gets the request user, which scopes document access.
-    assert [c.kwargs["user"] for c in tool.run.call_args_list] == [user, user]
+    # Every dispatch gets the run's context, unchanged.
+    assert [c.kwargs["context"] for c in tool.run.call_args_list] == [context, context]
     assert (result.output_text, result.response_id) == ("answer", "r3")
 
 
@@ -72,7 +72,7 @@ def test_tool_failures_reach_the_model_and_are_recorded_by_kind():
     broken = Tool("search_documents", "", {}, run=MagicMock(side_effect=RuntimeError("db down")))
 
     outputs, records = handle_tool_calls(
-        response("r1", call("made_up_tool", "c1"), call("search_documents", "c2", query="q")), [broken], user=None
+        response("r1", call("made_up_tool", "c1"), call("search_documents", "c2", query="q")), [broken], context=None
     )
 
     assert [o["call_id"] for o in outputs] == ["c1", "c2"]

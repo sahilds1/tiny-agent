@@ -10,9 +10,11 @@ class Tool:
     name: str
     description: str
     parameters: dict
-    # Function we run: run(user, **arguments) -> str. 
-    # Every tool takes the request `user` so the dispatch loop can call them uniformly; 
+    # Function we run: run(context, **arguments) -> str.
+    # Every tool takes the run's `context` so the dispatch loop can call them uniformly;
     # A tool that doesn't need it simply ignores it.
+    # The app using the library defines the context type, e.g. a frozen dataclass of user id, db session and API clients.
+    # The library never imports or inspects it. Typing it generically is the TODO in agentic_loop.run_agentic_loop
     run: Callable
 
     # Schema that the model sees:  Flattened Responses-API shape

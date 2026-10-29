@@ -12,8 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 def run_agentic_loop(
-    response, client, model_defaults: dict, tools: list, user
+    response, client, model_defaults: dict, tools: list, context
 ) -> AgentResult:
+    # context is whatever the app's tools need; the loop passes it unchanged to each tool without reading it.
+    # TODO: Type it generically (Tool[C], context: C) so a type checker catches a tool expecting another context
 
     # Every tool call the agentic loop made before exiting
     agentic_loop_tool_call_executions= []
@@ -27,8 +29,8 @@ def run_agentic_loop(
         agentic_loop_token_usage.append(get_token_usage(response))
 
         # TODO: Add a schema function to ToolCallExecution
-        # user is threaded through so tools that need it get it at dispatch time
-        tool_output_schemas, tool_call_executions = handle_tool_calls(response, tools, user)
+        # context is threaded through so tools that need it get it at dispatch time
+        tool_output_schemas, tool_call_executions = handle_tool_calls(response, tools, context)
 
         # TODO: Rewrite to .append every iteration's list of tools or decide whether 
         # to add iteration integer to ToolCallExecution to split the flat tool_calls into iterations
@@ -77,7 +79,7 @@ def get_token_usage(response) -> TokenUsage:
 
 
 def handle_tool_calls(
-    response, tools: list, user
+    response, tools: list, context
 ) -> tuple[list[dict], list[ToolCallExecution]]:
 
     # Index the tools by name so a model-supplied call name can be looked up. .get()
@@ -94,7 +96,7 @@ def handle_tool_calls(
 
         elif response_item.type == "function_call":
 
-            tool_output, tool_call_execution = _execute_function_call(response_item, tools_by_name, user)
+            tool_output, tool_call_execution = _execute_function_call(response_item, tools_by_name, context)
 
             tool_output_schemas.append(
                 {
@@ -111,7 +113,7 @@ def handle_tool_calls(
 
 
 def _execute_function_call(
-    response_item, tools_by_name: dict, user
+    response_item, tools_by_name: dict, context
 ) -> tuple[str, ToolCallExecution]:
 
     target_tool = tools_by_name.get(response_item.name)
@@ -134,7 +136,7 @@ def _execute_function_call(
         logger.info(
             f"Invoking tool: {response_item.name} with arguments: {arguments}"
         )
-        tool_output = target_tool.run(user=user, **arguments)
+        tool_output = target_tool.run(context=context, **arguments)
         logger.info(f"Tool {response_item.name} completed successfully")
         return tool_output, ToolCallExecution(
             name=response_item.name,

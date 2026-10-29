@@ -26,8 +26,8 @@ Be specific rather than generic - use terms that would appear in the relevant do
         "required": ["query"],
     },
 
-    # search_documents needs the request user for document access control.
-    run=lambda user, query: search_documents(query, user),
+    # Balancer's context is the request user: search_documents needs it for document access control.
+    run=lambda context, query: search_documents(query, context),
 )
 
 # The schema string describing the queryable medication table for ask_database's prompt.
@@ -66,8 +66,8 @@ SQL SELECT query.
     # can be bypassed (UNION, a second statement), and it returns errors as strings, so
     # a failed query would be recorded as OK. See the note at TOOLS.
 
-    # ask_database queries the shared medication table, so it ignores the request user.
-    run=lambda user, query: ask_database(query),
+    # ask_database queries the shared medication table, so it ignores the context.
+    run=lambda context, query: ask_database(query),
 )
 
 
