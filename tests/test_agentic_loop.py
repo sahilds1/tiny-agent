@@ -4,16 +4,14 @@
 # Deliberately not tested here (lower stakes, or fails loudly on the first real call):
 # eval and token telemetry, previous_response_id handling in run_assistant, tool
 # schemas and adapters, and the prompt text (model behavior, measured by the eval).
-#
-# TODO: Pin search_documents' result format once `File: {file_id}` is dropped (search_tool.py)
+# Balancer's search tool is tested in examples/balancer/test_search_tool.py.
 
 import json
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-from api.views.assistant.agentic_loop import handle_tool_calls, run_agentic_loop
-from api.views.assistant.assistant_types import Tool, ToolCallStatus
-from api.views.assistant.tool_services import SEARCH_TOOL
+from tiny_agent.agentic_loop import handle_tool_calls, run_agentic_loop
+from tiny_agent.assistant_types import Tool, ToolCallStatus
 
 
 # Minimal stand-ins for OpenAI response objects: only the attributes the loop reads.
@@ -79,26 +77,3 @@ def test_tool_failures_reach_the_model_and_are_recorded_by_kind():
     assert "made_up_tool" in outputs[0]["output"] and "db down" in outputs[1]["output"]
     # Opposite diagnoses: the model invented a tool, versus our tool broke.
     assert [r.status for r in records] == [ToolCallStatus.UNREGISTERED, ToolCallStatus.FAILED]
-
-
-# --- Retrieval is scoped to the request user, and failure is not "no match" ----------
-#
-# Runs the real SEARCH_TOOL with only the embedding search mocked. The request user
-# must reach the search unchanged: it is what scopes document access, and passing the
-# wrong one would silently return someone else's documents. And a search that breaks
-# must be recorded as FAILED, not reported to the model as "nothing matched".
-
-@patch("api.views.assistant.search_tool.convert_uuids", side_effect=lambda rows: rows)
-@patch("api.views.assistant.search_tool.get_closest_embeddings", side_effect=[RuntimeError("index down"), []])
-def test_search_uses_the_request_user_and_tells_failure_from_no_match(mock_search, _):
-    user = object()
-
-    outputs, records = handle_tool_calls(
-        response("r1", call("search_documents", "c1", query="a"), call("search_documents", "c2", query="b")),
-        [SEARCH_TOOL],
-        user,
-    )
-
-    assert [c.kwargs["user"] for c in mock_search.call_args_list] == [user, user]
-    assert [r.status for r in records] == [ToolCallStatus.FAILED, ToolCallStatus.OK]
-    assert "No relevant documents found" in outputs[1]["output"]

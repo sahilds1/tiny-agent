@@ -14,3 +14,4 @@ These files are for reference only. They import Balancer's Django paths (`api.vi
 | `assistant_prompts.py` | Where the system prompt lives (blank here) |
 | `eval_assistant.py` | An eval runner: concurrent runs, token totals, results CSV |
 | `review.ipynb` | Comparing two eval CSVs side by side |
+| `test_search_tool.py` | Testing a context-scoped tool through the loop, with the search backend mocked |

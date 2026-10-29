@@ -1,0 +1,22 @@
+[project]
+name = "tiny-agent"
+version = "0.1.0.dev0"
+description = "A lightweight tool-calling loop for LLM agents"
+readme = "README.md"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
+# Provisional: the lowest version the code allows (it uses `X | None`). The consumer's Python version is still open
+requires-python = ">=3.10"
+# The core uses only the standard library; the loop takes the client duck-typed
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+# examples/ imports Balancer's Django app, so pytest must never collect it
+testpaths = ["tests"]

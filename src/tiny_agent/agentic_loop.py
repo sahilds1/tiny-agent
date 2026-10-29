@@ -1,7 +1,7 @@
 import json
 import logging
 
-from api.views.assistant.assistant_types import (
+from tiny_agent.assistant_types import (
     AgentResult,
     ToolCallExecution,
     ToolCallStatus,
